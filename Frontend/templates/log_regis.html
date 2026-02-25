@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập & Đăng ký - TTTN Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        .perspective-container {
+            perspective: 2000px;
+            touch-action: pan-y; /* Khóa cuộn ngang màn hình đt, chỉ cho cuộn dọc */
+        }
+
+        .flipper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            /* Đặt cubic-bezier để thẻ nảy nhẹ khi thả tay */
+            transition: transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .flipper-front, .flipper-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            top: 0; left: 0;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            background-color: #ffffff;
+        }
+
+        .flipper-back {
+            transform: rotateY(180deg);
+            background-color: #f8fafc;
+        }
+
+        .animated-bg {
+            background: linear-gradient(-45deg, #1e3a8a, #3b82f6, #06b6d4, #0ea5e9);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
+</head>
+<body class="animated-bg min-h-screen flex items-center justify-center p-4">
+
+    <div class="perspective-container w-full max-w-[420px] h-[580px]">
+
+        <div class="flipper cursor-grab active:cursor-grabbing" id="authCard">
+
+            <div class="flipper-front flex flex-col justify-center px-10">
+                <div class="mb-6 text-center pointer-events-none select-none">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl mb-4">
+                        <i data-lucide="log-in" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800">Chào mừng</h2>
+                </div>
+
+                <div id="loginMsg" class="hidden mb-4 p-3 rounded-lg text-sm text-center font-medium"></div>
+
+                <form class="space-y-5" onsubmit="handleLogin(event)">
+                    <div class="relative">
+                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-gray-400"></i>
+                        <input type="email" id="loginEmail" placeholder="Email" required class="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition-all">
+                    </div>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-gray-400"></i>
+                        <input type="password" id="loginPassword" placeholder="Mật khẩu" required class="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none transition-all">
+                    </div>
+
+                    <button type="submit" id="btnSubmitLogin" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-600/30 outline-none">
+                        Đăng nhập
+                    </button>
+                </form>
+
+                <div class="mt-8 text-center text-gray-600 text-sm">
+                    Chưa có tài khoản?
+                    <button type="button" onclick="flipOnClick()" class="text-blue-600 font-bold hover:underline ml-1 outline-none">Đăng ký</button>
+                </div>
+            </div>
+
+            <div class="flipper-back flex flex-col justify-center px-10">
+                <div class="mb-6 text-center pointer-events-none select-none">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 text-green-600 rounded-2xl mb-4">
+                        <i data-lucide="user-plus" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800">Tạo tài khoản</h2>
+                </div>
+
+                <div id="regMsg" class="hidden mb-4 p-3 rounded-lg text-sm text-center font-medium"></div>
+
+                <form class="space-y-4" onsubmit="handleRegister(event)">
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-4 top-3.5 w-5 h-5 text-gray-400"></i>
+                        <input type="text" id="regName" placeholder="Họ và tên" required class="w-full pl-12 pr-4 py-3 bg-white rounded-xl focus:ring-2 focus:ring-green-400 outline-none transition-all">
+                    </div>
+                    <div class="relative">
+                        <i data-lucide="mail" class="absolute left-4 top-3.5 w-5 h-5 text-gray-400"></i>
+                        <input type="email" id="regEmail" placeholder="Email" required class="w-full pl-12 pr-4 py-3 bg-white rounded-xl focus:ring-2 focus:ring-green-400 outline-none transition-all">
+                    </div>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-4 top-3.5 w-5 h-5 text-gray-400"></i>
+                        <input type="password" id="regPassword" placeholder="Mật khẩu (>6 ký tự)" required minlength="6" class="w-full pl-12 pr-4 py-3 bg-white rounded-xl focus:ring-2 focus:ring-green-400 outline-none transition-all">
+                    </div>
+
+                    <button type="submit" id="btnSubmitReg" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-green-600/30 outline-none">
+                        Đăng ký ngay
+                    </button>
+                </form>
+
+                <div class="mt-8 text-center text-gray-600 text-sm">
+                    Đã có tài khoản?
+                    <button type="button" onclick="flipOnClick()" class="text-green-600 font-bold hover:underline ml-1 outline-none">Đăng nhập</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const card = document.getElementById('authCard');
+        let isDragging = false;
+        let startX = 0;
+        let currentRotation = 0; // Tích lũy liên tục: 0, 180, 360, 540...
+
+        // 1. KÍCH HOẠT LẬT KHI CLICK NÚT
+        function flipOnClick() {
+            // Luôn cộng thêm 180 để lật mượt về phía trước, không bao giờ bị giật ngược
+            currentRotation += 180;
+            card.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1)';
+            card.style.transform = `rotateY(${currentRotation}deg)`;
+            clearMessages();
+        }
+
+        function clearMessages() {
+            document.getElementById('loginMsg').classList.add('hidden');
+            document.getElementById('regMsg').classList.add('hidden');
+        }
+
+        // 2. KÍCH HOẠT LẬT KHI VUỐT/KÉO CHUỘT
+        card.addEventListener('pointerdown', (e) => {
+            // Nếu bấm trúng Ô nhập liệu hoặc Nút bấm -> Từ chối vuốt (Để người dùng gõ chữ)
+            if (['INPUT', 'BUTTON', 'A'].includes(e.target.tagName)) return;
+
+            isDragging = true;
+            startX = e.clientX;
+            card.style.transition = 'none'; // Tắt độ trễ để thẻ bám sát ngón tay lập tức
+            card.setPointerCapture(e.pointerId);
+        });
+
+        card.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            let deltaX = e.clientX - startX;
+            // Xoay thẻ theo chiều kéo của tay (nhân 0.5 để giảm tốc độ xoay cho chân thực)
+            let tempRotation = currentRotation + (deltaX * 0.5);
+            card.style.transform = `rotateY(${tempRotation}deg)`;
+        });
+
+        card.addEventListener('pointerup', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            card.releasePointerCapture(e.pointerId);
+
+            let deltaX = e.clientX - startX;
+            card.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1)'; // Bật lại hiệu ứng mượt
+
+            // Nếu lực kéo đủ mạnh (> 50px)
+            if (Math.abs(deltaX) > 50) {
+                // Kéo sang phải cộng 180 độ, kéo trái trừ 180 độ (Tích lũy vô hạn)
+                currentRotation += (deltaX > 0) ? 180 : -180;
+            }
+            // (Nếu kéo yếu < 50px, currentRotation giữ nguyên, thẻ tự nảy về mặt cũ)
+
+            card.style.transform = `rotateY(${currentRotation}deg)`;
+            clearMessages();
+        });
+
+        // ================= CÁC HÀM API ĐĂNG NHẬP / ĐĂNG KÝ =================
+        function showMessage(elementId, isSuccess, message) {
+            const el = document.getElementById(elementId);
+            el.innerText = message;
+            el.className = `mb-4 p-3 rounded-lg text-sm text-center font-medium ${isSuccess ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            el.classList.remove('hidden');
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSubmitLogin');
+            btn.innerText = "Đang xử lý..."; btn.disabled = true;
+
+            const formData = new URLSearchParams();
+            formData.append('username', document.getElementById('loginEmail').value);
+            formData.append('password', document.getElementById('loginPassword').value);
+
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('access_token', data.access_token);
+                    window.location.href = '/home';
+                } else {
+                    showMessage('loginMsg', false, data.detail || "Sai thông tin đăng nhập!");
+                }
+            } catch (err) {
+                showMessage('loginMsg', false, "Lỗi kết nối đến máy chủ.");
+            } finally {
+                btn.innerText = "Đăng nhập"; btn.disabled = false;
+            }
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSubmitReg');
+            btn.innerText = "Đang xử lý..."; btn.disabled = true;
+
+            const payload = {
+                full_name: document.getElementById('regName').value,
+                email: document.getElementById('regEmail').value,
+                password: document.getElementById('regPassword').value
+            };
+
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showMessage('regMsg', true, "Đăng ký thành công!");
+                    document.getElementById('loginEmail').value = payload.email;
+                    document.getElementById('loginPassword').value = '';
+                    setTimeout(() => flipOnClick(), 1500); // Tự lật về trang Đăng nhập
+                } else {
+                    let errorText = data.detail || "Đăng ký thất bại!";
+                    if (Array.isArray(data.detail)) errorText = data.detail[0].msg;
+                    showMessage('regMsg', false, errorText);
+                }
+            } catch (err) {
+                showMessage('regMsg', false, "Lỗi kết nối đến máy chủ.");
+            } finally {
+                btn.innerText = "Đăng ký ngay"; btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

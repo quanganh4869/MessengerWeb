@@ -1,0 +1,526 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTTN Chat Web</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="h-screen overflow-hidden bg-slate-100 text-slate-800">
+    <div class="h-full flex">
+        <aside id="sidebarPanel" class="w-full md:w-[340px] lg:w-[360px] bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
+            <div class="h-16 flex items-center justify-between px-4 border-b border-slate-200 bg-slate-50">
+                <button type="button" class="flex items-center gap-3 min-w-0 group" onclick="toggleProfileModal()">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg border border-blue-200 group-hover:bg-blue-200 transition">
+                        <span id="userAvatarInitial">U</span>
+                    </div>
+                    <div class="flex flex-col min-w-0 text-left">
+                        <span id="navUserName" class="font-semibold text-sm truncate">Dang tai...</span>
+                        <span class="text-[11px] text-green-600 font-medium">Online</span>
+                    </div>
+                </button>
+
+                <button type="button" class="p-2 hover:bg-slate-200 rounded-full transition" title="Tat ca nguoi dung">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-3 border-b border-slate-200">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+                    <input id="searchUsersInput" type="text" placeholder="Tim kiem nguoi dung" class="w-full bg-slate-100 text-sm rounded-md pl-9 pr-3 py-2 outline-none focus:bg-white focus:ring-1 focus:ring-blue-500 transition">
+                </div>
+            </div>
+
+            <div id="conversationList" class="flex-1 overflow-y-auto"></div>
+        </aside>
+
+        <main id="chatShell" class="hidden md:flex flex-1 min-w-0 bg-[#eaf0f6] flex-col">
+            <header id="chatHeader" class="h-16 px-3 md:px-5 bg-white border-b border-slate-200 hidden items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-3 min-w-0">
+                    <button type="button" onclick="goBackToSidebar()" class="md:hidden p-2 rounded-full hover:bg-slate-100 transition">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+
+                    <div id="selectedUserInitial" class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-semibold">?</div>
+
+                    <button id="selectedUserButton" type="button" onclick="openTargetUserModal()" class="min-w-0 text-left hover:opacity-80 transition">
+                        <p id="selectedUserName" class="font-semibold text-sm truncate">Chua chon nguoi dung</p>
+                        <p id="selectedUserEmail" class="text-xs text-slate-500 truncate">--</p>
+                    </button>
+                </div>
+            </header>
+
+            <section id="chatEmptyState" class="flex-1 flex items-center justify-center p-6 md:p-10">
+                <div class="w-full max-w-lg bg-white/75 backdrop-blur-sm border border-slate-200 rounded-2xl p-8 text-center shadow-sm">
+                    <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <i data-lucide="messages-square" class="w-10 h-10"></i>
+                    </div>
+
+                    <h2 class="mt-6 text-2xl font-semibold text-slate-800">TTTN Chat Desktop</h2>
+                    <p class="mt-2 text-sm text-slate-600">Chon mot nguoi dung o sidebar de bat dau tro chuyen.</p>
+                    <p class="mt-1 text-xs text-slate-500">Trang thai nay giong giao dien trong suot khi chua mo hoi thoai tren Zalo PC.</p>
+
+                    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left text-xs text-slate-600">
+                        <div class="bg-white border border-slate-200 rounded-lg p-3">Danh sach nguoi dung cap nhat tu API co JWT.</div>
+                        <div class="bg-white border border-slate-200 rounded-lg p-3">Bam vao ten trong header chat de xem chi tiet user.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="chatPanel" class="hidden flex-1 min-h-0 flex-col">
+                <div id="messagesViewport" class="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+                    <div id="messageThread" class="max-w-3xl mx-auto space-y-4">
+                        <div class="bg-white border border-slate-200 rounded-xl p-4 text-sm text-slate-600 shadow-sm">
+                            Hay nhap tin nhan vao o duoi cung de trao doi voi nguoi dung da chon.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-shrink-0 border-t border-slate-200 bg-white px-3 py-3 md:px-5 md:py-4">
+                    <form id="composerForm" class="max-w-3xl mx-auto flex items-center gap-2" onsubmit="handleComposerSubmit(event)">
+                        <button type="button" class="h-10 w-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition" title="Emoji">
+                            <i data-lucide="smile-plus" class="w-5 h-5"></i>
+                        </button>
+                        <input id="messageInput" type="text" placeholder="Nhap tin nhan..." class="flex-1 h-10 rounded-full border border-slate-300 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+                        <button type="submit" class="h-10 px-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition">Gui</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="profileModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-[360px] max-w-[92vw] overflow-hidden transform scale-95 transition-transform duration-200" id="modalContent">
+            <div class="h-32 bg-gradient-to-r from-blue-500 to-indigo-600 relative">
+                <button type="button" onclick="toggleProfileModal()" class="absolute top-3 right-3 text-white/80 hover:text-white bg-black/20 rounded-full p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="px-6 pb-6 relative text-center">
+                <div class="w-20 h-20 bg-white rounded-full mx-auto -mt-10 p-1 shadow-lg flex items-center justify-center border border-slate-100">
+                    <div class="w-full h-full bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-3xl font-bold" id="modalAvatarInitial">U</div>
+                </div>
+
+                <h3 class="text-xl font-bold mt-3 text-slate-800" id="modalFullName">Dang tai...</h3>
+                <p class="text-sm text-slate-500 mt-1 flex items-center justify-center gap-1">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    <span id="modalEmail">...</span>
+                </p>
+
+                <div class="mt-6 space-y-2">
+                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg text-sm border border-slate-100">
+                        <span class="text-slate-500">Trang thai</span>
+                        <span class="font-medium text-green-600">Dang hoat dong</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg text-sm border border-slate-100">
+                        <span class="text-slate-500">ID Nguoi dung</span>
+                        <span class="font-medium text-slate-800 font-mono" id="modalUserId">#--</span>
+                    </div>
+                </div>
+
+                <button type="button" onclick="logout()" class="mt-6 w-full flex justify-center items-center gap-2 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium transition">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    Dang xuat
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="targetUserModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-[380px] max-w-[92vw] overflow-hidden transform scale-95 transition-transform duration-200" id="targetModalContent">
+            <div class="h-28 bg-gradient-to-r from-indigo-500 to-cyan-500 relative">
+                <button type="button" onclick="closeTargetUserModal()" class="absolute top-3 right-3 text-white/80 hover:text-white bg-black/20 rounded-full p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="px-6 pb-6 relative text-center">
+                <div class="w-20 h-20 bg-white rounded-full mx-auto -mt-10 p-1 shadow-lg flex items-center justify-center border border-slate-100">
+                    <div class="w-full h-full bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-3xl font-bold" id="targetModalAvatarInitial">?</div>
+                </div>
+
+                <h3 class="text-xl font-bold mt-3 text-slate-800" id="targetModalFullName">--</h3>
+                <p class="text-sm text-slate-500 mt-1 flex items-center justify-center gap-1">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    <span id="targetModalEmail">--</span>
+                </p>
+
+                <div class="mt-6 space-y-2 text-sm">
+                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <span class="text-slate-500">User ID</span>
+                        <span class="font-medium text-slate-800 font-mono" id="targetModalUserId">#--</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <span class="text-slate-500">Trang thai</span>
+                        <span class="font-medium" id="targetModalStatus">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let currentUser = null;
+        let sidebarUsers = [];
+        let selectedUser = null;
+        let mobilePanel = "list";
+
+        function getDisplayName(user) {
+            if (!user) {
+                return "Khong ro";
+            }
+            if (user.full_name && user.full_name.trim()) {
+                return user.full_name.trim();
+            }
+            if (user.email) {
+                return user.email.split("@")[0];
+            }
+            return `User ${user.id}`;
+        }
+
+        function getInitial(name) {
+            return name && name.length ? name[0].toUpperCase() : "U";
+        }
+
+        function isMobileViewport() {
+            return window.innerWidth < 768;
+        }
+
+        function applyResponsiveLayout() {
+            const sidebar = document.getElementById("sidebarPanel");
+            const chatShell = document.getElementById("chatShell");
+
+            if (isMobileViewport()) {
+                if (mobilePanel === "chat") {
+                    sidebar.classList.add("hidden");
+                    chatShell.classList.remove("hidden");
+                    chatShell.classList.add("flex");
+                } else {
+                    sidebar.classList.remove("hidden");
+                    sidebar.classList.add("flex");
+                    chatShell.classList.add("hidden");
+                    chatShell.classList.remove("flex");
+                }
+                return;
+            }
+
+            sidebar.classList.remove("hidden");
+            sidebar.classList.add("flex");
+            chatShell.classList.remove("hidden");
+            chatShell.classList.add("flex");
+        }
+
+        async function apiGet(url) {
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${authToken}`
+                }
+            });
+
+            if (response.status === 401) {
+                logout();
+                throw new Error("Unauthorized");
+            }
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || "Request failed");
+            }
+
+            return response.json();
+        }
+
+        function renderCurrentUser(user) {
+            const displayName = getDisplayName(user);
+            const initial = getInitial(displayName);
+
+            document.getElementById("navUserName").textContent = displayName;
+            document.getElementById("userAvatarInitial").textContent = initial;
+
+            document.getElementById("modalFullName").textContent = displayName;
+            document.getElementById("modalEmail").textContent = user.email || "--";
+            document.getElementById("modalAvatarInitial").textContent = initial;
+            document.getElementById("modalUserId").textContent = `#${user.id}`;
+        }
+
+        function createUserRow(user) {
+            const row = document.createElement("button");
+            row.type = "button";
+            row.dataset.userId = String(user.id);
+            row.className = "w-full text-left flex items-center gap-3 p-3 hover:bg-slate-100 transition border-b border-slate-100";
+
+            const displayName = getDisplayName(user);
+            const avatar = document.createElement("div");
+            avatar.className = "w-11 h-11 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold flex-shrink-0";
+            avatar.textContent = getInitial(displayName);
+
+            const content = document.createElement("div");
+            content.className = "min-w-0 flex-1";
+
+            const title = document.createElement("p");
+            title.className = "font-medium text-sm truncate";
+            title.textContent = displayName;
+
+            const sub = document.createElement("p");
+            sub.className = "text-xs text-slate-500 truncate";
+            sub.textContent = user.email || "Khong co email";
+
+            content.appendChild(title);
+            content.appendChild(sub);
+
+            row.appendChild(avatar);
+            row.appendChild(content);
+
+            row.addEventListener("click", () => openConversation(user.id));
+            return row;
+        }
+
+        function highlightSelectedUser() {
+            const rows = document.querySelectorAll("#conversationList button[data-user-id]");
+            rows.forEach((row) => {
+                const active = selectedUser && row.dataset.userId === String(selectedUser.id);
+                row.classList.toggle("bg-blue-50", !!active);
+                row.classList.toggle("border-blue-100", !!active);
+            });
+        }
+
+        function renderSidebar(users) {
+            const list = document.getElementById("conversationList");
+            list.innerHTML = "";
+
+            if (!users.length) {
+                const empty = document.createElement("div");
+                empty.className = "p-4 text-sm text-slate-500";
+                empty.textContent = "Khong tim thay nguoi dung nao.";
+                list.appendChild(empty);
+                return;
+            }
+
+            users.forEach((user) => list.appendChild(createUserRow(user)));
+            highlightSelectedUser();
+        }
+
+        function setEmptyChatState() {
+            document.getElementById("chatHeader").classList.add("hidden");
+            document.getElementById("chatPanel").classList.add("hidden");
+            document.getElementById("chatEmptyState").classList.remove("hidden");
+        }
+
+        function updateChatHeaderUser(user) {
+            const name = getDisplayName(user);
+            const initial = getInitial(name);
+            document.getElementById("selectedUserInitial").textContent = initial;
+            document.getElementById("selectedUserName").textContent = name;
+            document.getElementById("selectedUserEmail").textContent = user.email || "--";
+        }
+
+        function renderChatIntro(user) {
+            const thread = document.getElementById("messageThread");
+            const name = getDisplayName(user);
+            thread.innerHTML = "";
+
+            const intro = document.createElement("div");
+            intro.className = "bg-white border border-slate-200 rounded-xl p-4 text-sm text-slate-600 shadow-sm";
+
+            const strong = document.createElement("strong");
+            strong.textContent = name;
+
+            intro.append("Ban dang tro chuyen voi ", strong, ". Bam vao ten o header de xem thong tin chi tiet.");
+            thread.appendChild(intro);
+
+            document.getElementById("messagesViewport").scrollTop = 0;
+        }
+
+        function setSelectedChatState(user) {
+            updateChatHeaderUser(user);
+
+            document.getElementById("chatHeader").classList.remove("hidden");
+            document.getElementById("chatHeader").classList.add("flex");
+            document.getElementById("chatPanel").classList.remove("hidden");
+            document.getElementById("chatPanel").classList.add("flex");
+            document.getElementById("chatEmptyState").classList.add("hidden");
+
+            renderChatIntro(user);
+        }
+
+        async function openConversation(userId) {
+            try {
+                const user = await apiGet(`/auth/users/${userId}`);
+                selectedUser = user;
+                mobilePanel = "chat";
+                setSelectedChatState(selectedUser);
+                highlightSelectedUser();
+                applyResponsiveLayout();
+            } catch (error) {
+                console.error("Khong the mo hoi thoai:", error);
+            }
+        }
+
+        function goBackToSidebar() {
+            mobilePanel = "list";
+            applyResponsiveLayout();
+        }
+
+        async function loadSidebarUsers() {
+            sidebarUsers = await apiGet("/auth/users");
+            selectedUser = null;
+            mobilePanel = "list";
+            renderSidebar(sidebarUsers);
+            setEmptyChatState();
+        }
+
+        function handleSearchUsers(keyword) {
+            const q = keyword.trim().toLowerCase();
+            if (!q) {
+                renderSidebar(sidebarUsers);
+                return;
+            }
+
+            const filtered = sidebarUsers.filter((user) => {
+                const name = getDisplayName(user).toLowerCase();
+                const email = (user.email || "").toLowerCase();
+                return name.includes(q) || email.includes(q);
+            });
+            renderSidebar(filtered);
+        }
+
+        function appendOutgoingMessage(text) {
+            const thread = document.getElementById("messageThread");
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "flex justify-end";
+
+            const bubble = document.createElement("div");
+            bubble.className = "max-w-[80%] rounded-2xl rounded-br-md bg-blue-600 text-white text-sm px-4 py-2 shadow";
+            bubble.textContent = text;
+
+            wrapper.appendChild(bubble);
+            thread.appendChild(wrapper);
+
+            const viewport = document.getElementById("messagesViewport");
+            viewport.scrollTop = viewport.scrollHeight;
+        }
+
+        function handleComposerSubmit(event) {
+            event.preventDefault();
+            if (!selectedUser) {
+                return;
+            }
+
+            const input = document.getElementById("messageInput");
+            const text = input.value.trim();
+            if (!text) {
+                return;
+            }
+
+            appendOutgoingMessage(text);
+            input.value = "";
+        }
+
+        function toggleProfileModal() {
+            const modal = document.getElementById("profileModal");
+            const content = document.getElementById("modalContent");
+
+            if (modal.classList.contains("hidden")) {
+                modal.classList.remove("hidden");
+                modal.classList.add("flex");
+                setTimeout(() => content.classList.remove("scale-95"), 10);
+            } else {
+                content.classList.add("scale-95");
+                setTimeout(() => {
+                    modal.classList.add("hidden");
+                    modal.classList.remove("flex");
+                }, 150);
+            }
+        }
+
+        function fillTargetUserModal(user) {
+            const name = getDisplayName(user);
+            document.getElementById("targetModalAvatarInitial").textContent = getInitial(name);
+            document.getElementById("targetModalFullName").textContent = name;
+            document.getElementById("targetModalEmail").textContent = user.email || "--";
+            document.getElementById("targetModalUserId").textContent = `#${user.id}`;
+            document.getElementById("targetModalStatus").textContent = user.is_active ? "Dang hoat dong" : "Tam khoa";
+            document.getElementById("targetModalStatus").className = user.is_active ? "font-medium text-green-600" : "font-medium text-red-500";
+        }
+
+        async function openTargetUserModal() {
+            if (!selectedUser) {
+                return;
+            }
+
+            try {
+                selectedUser = await apiGet(`/auth/users/${selectedUser.id}`);
+                updateChatHeaderUser(selectedUser);
+                highlightSelectedUser();
+                fillTargetUserModal(selectedUser);
+
+                const modal = document.getElementById("targetUserModal");
+                const content = document.getElementById("targetModalContent");
+                modal.classList.remove("hidden");
+                modal.classList.add("flex");
+                setTimeout(() => content.classList.remove("scale-95"), 10);
+            } catch (error) {
+                console.error("Khong the mo thong tin user:", error);
+            }
+        }
+
+        function closeTargetUserModal() {
+            const modal = document.getElementById("targetUserModal");
+            const content = document.getElementById("targetModalContent");
+            content.classList.add("scale-95");
+            setTimeout(() => {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }, 150);
+        }
+
+        function logout() {
+            localStorage.removeItem("access_token");
+            window.location.href = "/login-page";
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            authToken = localStorage.getItem("access_token");
+            if (!authToken) {
+                window.location.href = "/login-page";
+                return;
+            }
+
+            try {
+                currentUser = await apiGet("/auth/me");
+                renderCurrentUser(currentUser);
+                await loadSidebarUsers();
+                applyResponsiveLayout();
+            } catch (error) {
+                console.error("Loi khoi tao chat:", error);
+            }
+
+            lucide.createIcons();
+        });
+
+        document.getElementById("searchUsersInput").addEventListener("input", (e) => {
+            handleSearchUsers(e.target.value);
+        });
+
+        document.getElementById("profileModal").addEventListener("click", function (e) {
+            if (e.target === this) {
+                toggleProfileModal();
+            }
+        });
+
+        document.getElementById("targetUserModal").addEventListener("click", function (e) {
+            if (e.target === this) {
+                closeTargetUserModal();
+            }
+        });
+
+        window.addEventListener("resize", applyResponsiveLayout);
+    </script>
+</body>
+</html>

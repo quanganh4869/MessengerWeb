@@ -1,0 +1,19 @@
+# --- Core Framework & Server ---
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+
+# --- Giao diện Web ---
+jinja2==3.1.3
+python-multipart==0.0.9
+
+# --- Database & ORM (Bất đồng bộ) ---
+sqlalchemy==2.0.36
+aiosqlite==0.20.0
+
+# --- Bảo mật & Xác thực (OAuth2, JWT, Băm mật khẩu) ---
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-dotenv==1.0.1
+
+# --- Real-time Chat ---
+websockets==12.0
